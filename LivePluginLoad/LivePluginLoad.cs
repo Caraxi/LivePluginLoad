@@ -27,7 +27,8 @@ namespace LivePluginLoad {
             disposed = true;
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
             reloadLoop?.Dispose();
-            RemoveCommands();
+            PluginInterface.CommandManager.RemoveHandler("/plpl");
+            PluginInterface.CommandManager.RemoveHandler("/plpl_load");
             PluginInterface?.Dispose();
         }
 
@@ -180,10 +181,6 @@ namespace LivePluginLoad {
 
         public void OnConfigCommandHandler(string command, string args) {
             drawConfigWindow = !drawConfigWindow;
-        }
-
-        public void RemoveCommands() {
-            PluginInterface.CommandManager.RemoveHandler("/plivepluginloader");
         }
 
         private void BuildUI() {
