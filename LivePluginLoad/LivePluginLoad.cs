@@ -76,15 +76,17 @@ namespace LivePluginLoad {
                             FileInfo fi2 = new FileInfo(plc.FilePath);
                             if (fi2.LastWriteTime.Ticks == fi.LastWriteTime.Ticks) {
                                 PluginLog.Log($"Changes Detected in {plc.PluginInternalName}");
-                                LoadPlugin(plc.FilePath, plc);
+                                plc.PerformReload = true;
                             }
                         }
                     }
                 }
             });
 
-
             SetupCommands();
+            if (PluginConfig.OpenAtStartup) {
+                drawConfigWindow = true;
+            }
         }
 
         public bool UnloadPlugin(string internalName, [CanBeNull] PluginLoadConfig pluginLoadConfig = null) {
@@ -185,6 +187,29 @@ namespace LivePluginLoad {
 
         private void BuildUI() {
             drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
+            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformReload)) {
+                plc.PerformReload = false;
+                plc.PerformLoad = true;
+                plc.PerformUnload = false;
+                UnloadPlugin(plc.PluginInternalName, plc);
+                return;
+            }
+
+            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformUnload)) {
+                plc.PerformLoad = false;
+                plc.PerformUnload = false;
+                plc.PerformReload = false;
+                UnloadPlugin(plc.PluginInternalName, plc);
+                return;
+            }
+
+            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformLoad)) {
+                plc.PerformLoad = false;
+                plc.PerformUnload = false;
+                plc.PerformReload = false;
+                LoadPlugin(plc.FilePath, plc);
+                return;
+            }
         }
     }
 }

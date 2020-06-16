@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace LivePluginLoad {
     public class PluginLoadConfig {
@@ -22,5 +17,16 @@ namespace LivePluginLoad {
 
         [JsonIgnore]
         public string PluginInternalName { get; set; }
+
+        [JsonIgnore]
+        public bool PerformReload { get; internal set; }
+
+        [JsonIgnore]
+        public bool PerformLoad { get; internal set; }
+
+        [JsonIgnore]
+        public bool PerformUnload { get; internal set; }
+        
+
     }
 }
