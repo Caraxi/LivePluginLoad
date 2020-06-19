@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace LivePluginLoad {
     class Browse {
@@ -16,11 +10,9 @@ namespace LivePluginLoad {
             this.callback = callback;
         }
 
-
-        [STAThread]
         public void BrowseDLL() {
             using var ofd = new OpenFileDialog {Filter = "Dalamud Plugin|*.dll"};
-            callback(ofd.ShowDialog(), ofd.FileName);
+            callback(ofd.ShowDialog(null), ofd.FileName);
         }
     }
 }
