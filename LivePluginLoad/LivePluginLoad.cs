@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
+using ImGuiNET;
 using JetBrains.Annotations;
 
 namespace LivePluginLoad {
@@ -176,12 +177,14 @@ namespace LivePluginLoad {
             });
         }
 
-        private void OnLoadCommandHandler(string command, string arguments) {
+        private void OnLoadCommandHandler(string command = "", string arguments = "") {
             PluginInterface.Framework.Gui.Chat.Print($"Loading Plugin: {arguments}");
-            LoadPlugin(arguments);
+            if (!string.IsNullOrEmpty(arguments)) {
+                LoadPlugin(arguments);
+            }
         }
 
-        public void OnConfigCommandHandler(string command, string args) {
+        public void OnConfigCommandHandler(string command = "", string args = "") {
             drawConfigWindow = !drawConfigWindow;
         }
 
@@ -209,6 +212,15 @@ namespace LivePluginLoad {
                 plc.PerformReload = false;
                 LoadPlugin(plc.FilePath, plc);
                 return;
+            }
+
+            if (PluginConfig.TopBar) {
+                ImGui.BeginMainMenuBar();
+                if (ImGui.MenuItem("LivePluginLoader")) {
+                    OnConfigCommandHandler();
+                }
+
+                ImGui.EndMainMenuBar();
             }
         }
     }

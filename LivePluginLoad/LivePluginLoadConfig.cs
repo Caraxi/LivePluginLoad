@@ -23,6 +23,7 @@ namespace LivePluginLoad {
         private bool browsing;
 
         public bool OpenAtStartup { get; set; } = true;
+        public bool TopBar { get; internal set; } = true;
 
         public LivePluginLoadConfig() { }
 
@@ -40,9 +41,15 @@ namespace LivePluginLoad {
             ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoCollapse;
             ImGui.Begin($"{plugin.Name} Config", ref drawConfig, windowFlags);
 
-            bool openAtStartup = OpenAtStartup;
+            var openAtStartup = OpenAtStartup;
             if (ImGui.Checkbox("Open at startup", ref openAtStartup)) {
                 OpenAtStartup = openAtStartup;
+                Save();
+            }
+            
+            var topBar = TopBar;
+            if (ImGui.Checkbox("Show Window Header Button", ref topBar)) {
+                TopBar = topBar;
                 Save();
             }
 
