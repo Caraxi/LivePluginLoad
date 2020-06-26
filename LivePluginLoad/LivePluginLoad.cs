@@ -24,6 +24,8 @@ namespace LivePluginLoad {
 
         private Task reloadLoop;
 
+        private readonly List<PluginLoadError> errorMessages = new List<PluginLoadError>();
+
         public void Dispose() {
             disposed = true;
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
@@ -152,15 +154,35 @@ namespace LivePluginLoad {
 
                     var dalamudInterface = new DalamudPluginInterface(dalamud, type.Assembly.GetName().Name, pluginConfigs);
 
-                    plugin.Initialize(dalamudInterface);
-                    PluginLog.Log("Loaded Plugin: {0}", plugin.Name);
 
-                    pluginsList.Add((plugin, pluginDef, dalamudInterface));
-                    if (pluginLoadConfig != null) {
-                        pluginLoadConfig.PluginInternalName = pluginDef.InternalName;
-                        pluginLoadConfig.Loaded = true;
+                    try {
+                        plugin.Initialize(dalamudInterface);
+                        PluginLog.Log("Loaded Plugin: {0}", plugin.Name);
+
+                        pluginsList.Add((plugin, pluginDef, dalamudInterface));
+                        if (pluginLoadConfig != null) {
+                            pluginLoadConfig.PluginInternalName = pluginDef.InternalName;
+                            pluginLoadConfig.Loaded = true;
+                        }
+                    } catch (Exception ex) {
+                        errorMessages.Add(new PluginLoadError(pluginLoadConfig, plugin, ex));
+                        PluginLog.LogError("Failed to load plugin: {0}", plugin.Name);
+                        PluginLog.LogError(ex.ToString());
                     }
                 }
+            }
+        }
+
+        public class PluginLoadError {
+            public PluginLoadConfig PluginLoadConfig { get; }
+            public IDalamudPlugin Plugin { get; }
+            public Exception Exception { get; }
+            public bool Closed { get; set; }
+
+            public PluginLoadError(PluginLoadConfig pluginLoadConfig, IDalamudPlugin plugin, Exception exception) {
+                PluginLoadConfig = pluginLoadConfig;
+                Plugin = plugin;
+                Exception = exception;
             }
         }
 
@@ -221,6 +243,18 @@ namespace LivePluginLoad {
                 }
 
                 ImGui.EndMainMenuBar();
+            }
+
+            foreach (var ex in errorMessages.Where(e => !e.Closed)) {
+                var open = !ex.Closed;
+                ImGui.Begin($"{ex.Plugin.Name} failed to load.", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
+                ImGui.TextUnformatted(ex.Exception.ToString());
+                ImGui.End();
+
+                if (open) continue;
+                foreach (var close in errorMessages.Where(e => ex.Plugin.Name == e.Plugin.Name)) {
+                    close.Closed = true;
+                }
             }
         }
     }
