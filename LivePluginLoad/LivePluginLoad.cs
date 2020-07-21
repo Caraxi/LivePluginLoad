@@ -21,6 +21,7 @@ namespace LivePluginLoad {
         private Dalamud.Dalamud dalamud;
         private PluginConfigurations pluginConfigs;
         private List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)> pluginsList;
+        private ConstructorInfo pluginInterfaceConstructor;
 
         private Task reloadLoop;
 
@@ -56,6 +57,7 @@ namespace LivePluginLoad {
                 ?.GetField("Plugins", BindingFlags.Instance | BindingFlags.Public)
                 ?.GetValue(pluginManager);
 
+            pluginInterfaceConstructor = typeof(DalamudPluginInterface).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {typeof(Dalamud.Dalamud), typeof(string), typeof(PluginConfigurations), typeof(PluginLoadReason)}, null);
 
             if (dalamud == null || pluginManager == null || pluginConfigs == null || pluginsList == null) {
                 PluginLog.LogError("Failed to setup.");
@@ -152,7 +154,7 @@ namespace LivePluginLoad {
                         IsHide = false
                     };
 
-                    var dalamudInterface = new DalamudPluginInterface(dalamud, type.Assembly.GetName().Name, pluginConfigs);
+                    var dalamudInterface = (DalamudPluginInterface) pluginInterfaceConstructor.Invoke(new object[] { dalamud, type.Assembly.GetName().Name, pluginConfigs, PluginLoadReason.Unknown});
 
 
                     try {
