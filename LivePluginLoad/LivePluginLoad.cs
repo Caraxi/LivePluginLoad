@@ -119,6 +119,8 @@ namespace LivePluginLoad {
 
             FileInfo dllFile = new FileInfo(dllPath);
 
+            var pdbPath = Path.Combine(Path.GetDirectoryName(dllPath), Path.GetFileNameWithoutExtension(dllPath) + ".pdb");
+
             if (pluginLoadConfig != null) {
                 pluginLoadConfig.FileSize = dllFile.Length;
                 pluginLoadConfig.FileChanged = dllFile.LastWriteTime.Ticks;
@@ -126,7 +128,18 @@ namespace LivePluginLoad {
 
             PluginLog.Log($"Attempting to load DLL at {dllFile.FullName}");
 
-            Assembly pluginAssembly = Assembly.Load(File.ReadAllBytes(dllFile.FullName));
+            Assembly pluginAssembly;
+
+            var assemblyData = File.ReadAllBytes(dllFile.FullName);
+
+
+            if (File.Exists(pdbPath)) {
+                var pdbData = File.ReadAllBytes(pdbPath);
+                pluginAssembly = Assembly.Load(assemblyData, pdbData);
+            } else {
+                pluginAssembly = Assembly.Load(assemblyData);
+            }
+
 
             var types = pluginAssembly.GetTypes();
             foreach (var type in types) {
