@@ -22,13 +22,71 @@ namespace LivePluginLoad {
         private PluginConfigurations pluginConfigs;
         private List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)> pluginsList;
         private ConstructorInfo pluginInterfaceConstructor;
+        private List<(Assembly assembly, string path)> loadedAssemblies = new List<(Assembly assembly, string path)>();
+        private readonly bool loadSubAssemblies = true;
 
         private Task reloadLoop;
 
         private readonly List<PluginLoadError> errorMessages = new List<PluginLoadError>();
 
+        public void TakeoverAssemblyResolve() {
+            PluginLog.Log("Attempting to takeover AppDomain.AssemblyResolve");
+
+            try {
+                var cd = AppDomain.CurrentDomain;
+
+                PluginLog.Log($"Current Domain: {cd.Id}");
+                var a = typeof(AppDomain);
+                var b = a.GetField("_AssemblyResolve", BindingFlags.Instance | BindingFlags.NonPublic);
+                var c = (ResolveEventHandler) b?.GetValue(cd);
+                
+                b?.SetValue(cd, new ResolveEventHandler(((sender, args) => {
+
+                    PluginLog.Log($"Resolving for: {args.RequestingAssembly.GetName().Name}");
+                    PluginLog.Log($"Loaded Assemblies: {loadedAssemblies.Count}");
+
+                    var f = loadedAssemblies.Where(la => la.assembly == args.RequestingAssembly).ToList();
+                    
+                    if (f.Count == 0) {
+                        PluginLog.Log("Not a LivePlugin");
+                        return c.Invoke(sender, args);
+                    }
+
+                    var l = f.Last();
+
+                    PluginLog.Log($"Loading Sub Assembly for {l.path}");
+
+                    var dirName = Path.GetDirectoryName(l.path);
+                    if (dirName == null) {
+                        return c.Invoke(sender, args);
+                    }
+
+                    var assemblyPath = Path.Combine(dirName, new AssemblyName(args.Name).Name + ".dll");
+
+                    PluginLog.Log($"Loading Assembly: {assemblyPath}");
+
+                    if (!File.Exists(assemblyPath)) {
+                        PluginLog.LogError($"File Not Found: {assemblyPath}");
+                        return c.Invoke(sender, args);
+                    }
+
+                    var assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
+
+                    loadedAssemblies.Add((assembly, assemblyPath));
+
+                    return assembly;
+                })));
+
+
+            } catch (Exception ex) {
+                PluginLog.Log("Failed to takeover AppDomain.AssemblyResolve");
+                PluginLog.LogError(ex.ToString());
+            }
+        }
+
         public void Dispose() {
             disposed = true;
+
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
             reloadLoop?.Dispose();
             PluginInterface.CommandManager.RemoveHandler("/plpl");
@@ -64,8 +122,11 @@ namespace LivePluginLoad {
                 return;
             }
 
-            PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
 
+            TakeoverAssemblyResolve();
+
+            PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
+            
             reloadLoop = Task.Run(async () => {
                 await Task.Delay(1000);
                 foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.LoadAtStartup == true)) {
@@ -75,10 +136,10 @@ namespace LivePluginLoad {
                 while (!disposed) {
                     await Task.Delay(1000);
                     foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.Loaded && plc.AutoReload)) {
-                        FileInfo fi = new FileInfo(plc.FilePath);
+                        var fi = new FileInfo(plc.FilePath);
                         if (plc.FileChanged != fi.LastWriteTime.Ticks) {
                             await Task.Delay(500);
-                            FileInfo fi2 = new FileInfo(plc.FilePath);
+                            var fi2 = new FileInfo(plc.FilePath);
                             if (fi2.LastWriteTime.Ticks == fi.LastWriteTime.Ticks) {
                                 PluginLog.Log($"Changes Detected in {plc.PluginInternalName}");
                                 plc.PerformReload = true;
@@ -94,7 +155,7 @@ namespace LivePluginLoad {
             }
         }
 
-        public bool UnloadPlugin(string internalName, [CanBeNull] PluginLoadConfig pluginLoadConfig = null) {
+        public bool UnloadPlugin(string internalName, PluginLoadConfig pluginLoadConfig = null) {
            try {
                (IDalamudPlugin plugin, PluginDefinition definition, DalamudPluginInterface pluginInterface) = pluginsList.FirstOrDefault(p => p.Definition.InternalName == internalName);
                plugin?.Dispose();
@@ -111,7 +172,8 @@ namespace LivePluginLoad {
            }
         }
 
-        public void LoadPlugin(string dllPath, [CanBeNull] PluginLoadConfig pluginLoadConfig = null) {
+        
+        public void LoadPlugin(string dllPath, PluginLoadConfig pluginLoadConfig = null) {
             if (!File.Exists(dllPath)) {
                 PluginLog.LogError("File does not exist: {0}", dllPath);
                 return;
@@ -140,6 +202,7 @@ namespace LivePluginLoad {
                 pluginAssembly = Assembly.Load(assemblyData);
             }
 
+            loadedAssemblies.Add((pluginAssembly, dllPath));
 
             var types = pluginAssembly.GetTypes();
             foreach (var type in types) {
@@ -183,6 +246,7 @@ namespace LivePluginLoad {
                         errorMessages.Add(new PluginLoadError(pluginLoadConfig, plugin, ex));
                         PluginLog.LogError("Failed to load plugin: {0}", plugin.Name);
                         PluginLog.LogError(ex.ToString());
+                        PluginLog.Log("\n\n");
                     }
                 }
             }
