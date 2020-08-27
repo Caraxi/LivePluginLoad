@@ -201,6 +201,8 @@ namespace LivePluginLoad {
             }
         }
 
+        public List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)> PluginList => pluginsList;
+
 
         public void SetupCommands() {
             PluginInterface.CommandManager.AddHandler("/plpl", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {

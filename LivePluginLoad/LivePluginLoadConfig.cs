@@ -4,6 +4,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Windows.Forms;
@@ -73,7 +74,7 @@ namespace LivePluginLoad {
             ImGui.Text("Unload");
             ImGui.NextColumn();
             ImGui.NewLine();
-            ImGui.Text("Remove");
+            ImGui.Text("Remove/Config");
             ImGui.NextColumn();
             ImGui.Separator();
             int index = 0;
@@ -139,7 +140,17 @@ namespace LivePluginLoad {
                 ImGui.NextColumn();
                 
                 if (plc.Loaded) {
-                    ImGui.Text("Unload to Remove");
+
+                    var loadedPlugin = plugin.PluginList.Where(p => p.Definition.InternalName == plc.PluginInternalName).Select(p => p.PluginInterface).FirstOrDefault();
+
+                    if (loadedPlugin?.UiBuilder.OnOpenConfigUi != null) {
+                        if (ImGui.Button($"Open Config###pluginConfig_PLC_OpenConfig_{index}", bSizeRemove)) {
+                            loadedPlugin?.UiBuilder.OnOpenConfigUi?.Invoke(null, null);
+                        }
+                    } else {
+                        ImGui.Text("Unload to Remove");
+                    }
+
                 } else {
                     if (ImGui.Button($"Remove###deletePlugin_PLC_RemovePlugin_{index}", bSizeRemove)) {
                         doRemove = plc;
