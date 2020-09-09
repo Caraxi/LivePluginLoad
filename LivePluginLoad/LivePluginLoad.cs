@@ -174,7 +174,11 @@ namespace LivePluginLoad {
                     };
 
                     var dalamudInterface = (DalamudPluginInterface) pluginInterfaceConstructor.Invoke(new object[] { dalamud, type.Assembly.GetName().Name, pluginConfigs, PluginLoadReason.Unknown});
-
+                    try {
+                        plugin.GetType()?.GetMethod("SetLocation", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(plugin, new object[] { dllFile.FullName });
+                    } catch {
+                        // Ignored
+                    }
 
                     try {
                         plugin.Initialize(dalamudInterface);
