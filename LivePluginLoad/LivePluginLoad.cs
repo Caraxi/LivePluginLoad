@@ -66,6 +66,12 @@ namespace LivePluginLoad {
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
 
+
+            if (PluginConfig.ForceDalamudDev)
+            {
+                dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
+            }
+
             reloadLoop = Task.Run(async () => {
                 await Task.Delay(1000);
                 foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.LoadAtStartup == true)) {

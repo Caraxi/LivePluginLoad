@@ -26,6 +26,8 @@ namespace LivePluginLoad {
         public bool OpenAtStartup { get; set; } = true;
         public bool TopBar { get; internal set; } = true;
 
+        public bool ForceDalamudDev { get; set; } = true;
+
         public LivePluginLoadConfig() { }
 
         public void Init(LivePluginLoad plugin, DalamudPluginInterface pluginInterface) {
@@ -54,14 +56,20 @@ namespace LivePluginLoad {
                 Save();
             }
 
+            var forceDev = ForceDalamudDev;
+            if (ImGui.Checkbox("Enable Dalamud Dev Menu", ref forceDev)) {
+                ForceDalamudDev = forceDev;
+                Save();
+            }
 
+            
             ImGui.Columns(5);
             ImGui.SetColumnWidth(0, ImGui.GetWindowWidth() - 350);
             ImGui.SetColumnWidth(1, 60);
             ImGui.SetColumnWidth(2, 60);
             ImGui.SetColumnWidth(3, 90);
             ImGui.SetColumnWidth(4, 150);
-            ImGui.NewLine();
+            ImGui.Separator();
             ImGui.Text("Plugin Path");
             ImGui.NextColumn();
             ImGui.Text("Load at");

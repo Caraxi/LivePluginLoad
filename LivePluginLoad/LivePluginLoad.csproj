@@ -43,16 +43,16 @@
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Dalamud">
-          <HintPath>F:\repo\Dalamud\Dalamud\bin\Debug\Dalamud.dll</HintPath>
+          <HintPath>$(AppData)\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
         </Reference>
         <Reference Include="ImGui.NET">
-          <HintPath>F:\repo\Dalamud\Dalamud\bin\Debug\ImGui.NET.dll</HintPath>
+          <HintPath>$(AppData)\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
         </Reference>
         <Reference Include="ImGuiScene">
-          <HintPath>F:\repo\Dalamud\Dalamud\bin\Debug\ImGuiScene.dll</HintPath>
+          <HintPath>$(AppData)\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
         </Reference>
         <Reference Include="Lumina">
-          <HintPath>F:\repo\Dalamud\Dalamud\bin\Debug\Lumina.dll</HintPath>
+          <HintPath>$(AppData)\XIVLauncher\addon\Hooks\Lumina.dll</HintPath>
         </Reference>
         <Reference Include="System.Net.Http" />
     </ItemGroup>
