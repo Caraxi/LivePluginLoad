@@ -111,8 +111,9 @@ namespace LivePluginLoad {
                }
 
                return true;
-           } catch (Exception) {
+           } catch (Exception ex) {
                PluginLog.LogError("Failed to unload");
+               PluginLog.LogError(ex.ToString());
                return false;
            }
         }
