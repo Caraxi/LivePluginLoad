@@ -127,6 +127,11 @@ namespace LivePluginLoad {
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             
+            if (PluginConfig.ForceDalamudDev)
+            {
+                dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
+            }
+
             reloadLoop = Task.Run(async () => {
                 await Task.Delay(1000);
                 foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.LoadAtStartup == true)) {
@@ -166,8 +171,9 @@ namespace LivePluginLoad {
                }
 
                return true;
-           } catch (Exception) {
+           } catch (Exception ex) {
                PluginLog.LogError("Failed to unload");
+               PluginLog.LogError(ex.ToString());
                return false;
            }
         }
@@ -231,7 +237,11 @@ namespace LivePluginLoad {
                     };
 
                     var dalamudInterface = (DalamudPluginInterface) pluginInterfaceConstructor.Invoke(new object[] { dalamud, type.Assembly.GetName().Name, pluginConfigs, PluginLoadReason.Unknown});
-
+                    try {
+                        plugin.GetType()?.GetMethod("SetLocation", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(plugin, new object[] { dllFile.FullName });
+                    } catch {
+                        // Ignored
+                    }
 
                     try {
                         plugin.Initialize(dalamudInterface);
