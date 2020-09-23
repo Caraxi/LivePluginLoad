@@ -24,7 +24,7 @@ namespace LivePluginLoad {
         private bool browsing;
 
         public bool OpenAtStartup { get; set; } = true;
-        public bool TopBar { get; internal set; } = true;
+        public bool TopBar { get; set; } = true;
 
         public bool ForceDalamudDev { get; set; } = true;
 
