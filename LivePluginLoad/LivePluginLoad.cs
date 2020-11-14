@@ -198,9 +198,32 @@ namespace LivePluginLoad {
 
             Assembly pluginAssembly;
 
-            var assemblyData = File.ReadAllBytes(dllFile.FullName);
-
-
+            byte[] assemblyData;
+            int failCount = 0;
+            int failCountMax = 5;
+            while (true)
+            {
+                try
+                {
+                    assemblyData = File.ReadAllBytes(dllFile.FullName);
+                    break;
+                }
+                catch (IOException)
+                {
+                    failCount++;
+                    if (failCount < failCountMax)
+                    {
+                        PluginLog.LogWarning($"Unable to read DLL at {dllFile.FullName} ({failCount}/{failCountMax})");
+                        Task.Delay(1000).Wait();
+                    }
+                    else
+                    {
+                        PluginLog.LogError($"Failed to read DLL at {dllFile.FullName}");
+                        return;
+                    }
+                }
+            }
+            
             if (File.Exists(pdbPath)) {
                 var pdbData = File.ReadAllBytes(pdbPath);
                 pluginAssembly = Assembly.Load(assemblyData, pdbData);
