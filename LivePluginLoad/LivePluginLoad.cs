@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
@@ -16,7 +17,8 @@ namespace LivePluginLoad {
         public LivePluginLoadConfig PluginConfig { get; private set; }
 
         private bool drawConfigWindow = false;
-        private bool disposed = false;
+        private CancellationTokenSource taskController = new CancellationTokenSource();
+        private CancellationToken cancellationToken;
         object pluginManager;
         private Dalamud.Dalamud dalamud;
         private PluginConfigurations pluginConfigs;
@@ -85,16 +87,17 @@ namespace LivePluginLoad {
         }
 
         public void Dispose() {
-            disposed = true;
-
+            taskController.Cancel();
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
-            reloadLoop?.Dispose();
             PluginInterface.CommandManager.RemoveHandler("/plpl");
             PluginInterface.CommandManager.RemoveHandler("/plpl_load");
+            while (reloadLoop != null && !reloadLoop.IsCompleted) Thread.Sleep(1);
+            reloadLoop?.Dispose();
             PluginInterface?.Dispose();
         }
 
         public void Initialize(DalamudPluginInterface pluginInterface) {
+            cancellationToken = taskController.Token;
             this.PluginInterface = pluginInterface;
             this.PluginConfig = (LivePluginLoadConfig) pluginInterface.GetPluginConfig() ?? new LivePluginLoadConfig();
             this.PluginConfig.Init(this, pluginInterface);
@@ -132,18 +135,23 @@ namespace LivePluginLoad {
                 dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
             }
 
-            reloadLoop = Task.Run(async () => {
-                await Task.Delay(1000);
+            reloadLoop = Task.Run(() => {
+                cancellationToken.WaitHandle.WaitOne(1000);
+                if (cancellationToken.IsCancellationRequested) return;
                 foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.LoadAtStartup == true)) {
+                    if (cancellationToken.IsCancellationRequested) return;
                     LoadPlugin(plc.FilePath, plc);
                 }
 
-                while (!disposed) {
-                    await Task.Delay(1000);
+                while (!cancellationToken.IsCancellationRequested) {
+                    cancellationToken.WaitHandle.WaitOne(1000);
+                    if (cancellationToken.IsCancellationRequested) break;
                     foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.Loaded && plc.AutoReload)) {
+                        if (cancellationToken.IsCancellationRequested) break;
                         var fi = new FileInfo(plc.FilePath);
                         if (plc.FileChanged != fi.LastWriteTime.Ticks) {
-                            await Task.Delay(500);
+                            cancellationToken.WaitHandle.WaitOne(500);
+                            if (cancellationToken.IsCancellationRequested) break;
                             var fi2 = new FileInfo(plc.FilePath);
                             if (fi2.LastWriteTime.Ticks == fi.LastWriteTime.Ticks) {
                                 PluginLog.Log($"Changes Detected in {plc.PluginInternalName}");
@@ -151,8 +159,10 @@ namespace LivePluginLoad {
                             }
                         }
                     }
+                    if (cancellationToken.IsCancellationRequested) break;
                 }
-            });
+                PluginLog.Log("Closed change detection thread");
+            }, cancellationToken);
 
             SetupCommands();
             if (PluginConfig.OpenAtStartup) {
