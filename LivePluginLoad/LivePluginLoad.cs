@@ -89,6 +89,7 @@ namespace LivePluginLoad {
         public void Dispose() {
             taskController.Cancel();
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
+            PluginInterface.UiBuilder.OnOpenConfigUi -= OnConfigCommandHandler;
             PluginInterface.CommandManager.RemoveHandler("/plpl");
             PluginInterface.CommandManager.RemoveHandler("/plpl_load");
             while (reloadLoop != null && !reloadLoop.IsCompleted) Thread.Sleep(1);
@@ -128,7 +129,8 @@ namespace LivePluginLoad {
             TakeoverAssemblyResolve();
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
-            
+            pluginInterface.UiBuilder.OnOpenConfigUi += OnConfigCommandHandler; 
+
             if (PluginConfig.ForceDalamudDev)
             {
                 dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
@@ -303,7 +305,7 @@ namespace LivePluginLoad {
         public void SetupCommands() {
             PluginInterface.CommandManager.AddHandler("/plpl", new Dalamud.Game.Command.CommandInfo(OnConfigCommandHandler) {
                 HelpMessage = $"Open config window for {this.Name}",
-                ShowInHelp = false
+                ShowInHelp = true
             });
 
             PluginInterface.CommandManager.AddHandler("/plpl_load", new Dalamud.Game.Command.CommandInfo(OnLoadCommandHandler) {
@@ -319,7 +321,7 @@ namespace LivePluginLoad {
             }
         }
 
-        public void OnConfigCommandHandler(string command = "", string args = "") {
+        public void OnConfigCommandHandler(object a = null, object b = null) {
             drawConfigWindow = !drawConfigWindow;
         }
 
