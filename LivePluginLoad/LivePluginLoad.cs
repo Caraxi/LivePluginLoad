@@ -124,8 +124,7 @@ namespace LivePluginLoad {
                 PluginLog.LogError("Failed to setup.");
                 return;
             }
-
-
+            
             TakeoverAssemblyResolve();
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
@@ -134,6 +133,18 @@ namespace LivePluginLoad {
             {
                 dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
             }
+
+            if (PluginConfig.DisablePanic) {
+                var gameData = (Lumina.Lumina) pluginInterface.Data?.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(pluginInterface.Data);
+                if (gameData == null) {
+                    PluginLog.Log("Failed to disable panic!");
+                } else {
+                    if (gameData.Options.PanicOnSheetChecksumMismatch) {
+                        UpdatePanic();
+                    }
+                }
+            }
+
 
             reloadLoop = Task.Run(() => {
                 cancellationToken.WaitHandle.WaitOne(1000);
@@ -357,6 +368,16 @@ namespace LivePluginLoad {
                 foreach (var close in errorMessages.Where(e => ex.Plugin.Name == e.Plugin.Name)) {
                     close.Closed = true;
                 }
+            }
+        }
+
+        public void UpdatePanic() {
+            var gameData = (Lumina.Lumina) PluginInterface.Data.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(PluginInterface.Data);
+            if (gameData != null) {
+                gameData.Options.PanicOnSheetChecksumMismatch = !PluginConfig.DisablePanic;
+                PluginLog.Log($"Set Panic: {!PluginConfig.DisablePanic}");
+            } else {
+                PluginLog.Log("Failed to get Lumina");
             }
         }
     }
