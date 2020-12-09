@@ -22,7 +22,7 @@ namespace LivePluginLoad {
         object pluginManager;
         private Dalamud.Dalamud dalamud;
         private PluginConfigurations pluginConfigs;
-        private List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)> pluginsList;
+        private List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface, bool IsRaw)> pluginsList;
         private ConstructorInfo pluginInterfaceConstructor;
         private List<(Assembly assembly, string path)> loadedAssemblies = new List<(Assembly assembly, string path)>();
         private readonly bool loadSubAssemblies = true;
@@ -114,7 +114,7 @@ namespace LivePluginLoad {
                 ?.GetField("pluginConfigs", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.GetValue(pluginManager);
 
-            pluginsList = (List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)>) pluginManager?.GetType()
+            pluginsList = (List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface, bool IsRaw)>) pluginManager?.GetType()
                 ?.GetField("Plugins", BindingFlags.Instance | BindingFlags.Public)
                 ?.GetValue(pluginManager);
 
@@ -172,9 +172,9 @@ namespace LivePluginLoad {
 
         public bool UnloadPlugin(string internalName, PluginLoadConfig pluginLoadConfig = null) {
            try {
-               (IDalamudPlugin plugin, PluginDefinition definition, DalamudPluginInterface pluginInterface) = pluginsList.FirstOrDefault(p => p.Definition.InternalName == internalName);
+               (IDalamudPlugin plugin, PluginDefinition definition, DalamudPluginInterface pluginInterface, bool IsRaw) = pluginsList.FirstOrDefault(p => p.Definition.InternalName == internalName);
                plugin?.Dispose();
-               pluginsList.Remove((plugin, definition, pluginInterface));
+               pluginsList.Remove((plugin, definition, pluginInterface, IsRaw));
 
                if (pluginLoadConfig != null) {
                    pluginLoadConfig.Loaded = false;
@@ -246,7 +246,7 @@ namespace LivePluginLoad {
                         IsHide = false
                     };
 
-                    var dalamudInterface = (DalamudPluginInterface) pluginInterfaceConstructor.Invoke(new object[] { dalamud, type.Assembly.GetName().Name, pluginConfigs, PluginLoadReason.Unknown});
+                    var dalamudInterface = (DalamudPluginInterface) pluginInterfaceConstructor.Invoke(new object[] { dalamud, type.Assembly.GetName().Name, pluginConfigs, PluginLoadReason.Unknown, true});
                     try {
                         plugin.GetType()?.GetProperty("AssemblyLocation", BindingFlags.Public | BindingFlags.Instance)?.SetValue(plugin, dllFile.FullName);
                         plugin.GetType()?.GetMethod("SetLocation", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(plugin, new object[] { dllFile.FullName });
@@ -258,7 +258,7 @@ namespace LivePluginLoad {
                         plugin.Initialize(dalamudInterface);
                         PluginLog.Log("Loaded Plugin: {0}", plugin.Name);
 
-                        pluginsList.Add((plugin, pluginDef, dalamudInterface));
+                        pluginsList.Add((plugin, pluginDef, dalamudInterface, true));
                         if (pluginLoadConfig != null) {
                             pluginLoadConfig.PluginInternalName = pluginDef.InternalName;
                             pluginLoadConfig.Loaded = true;
@@ -286,7 +286,7 @@ namespace LivePluginLoad {
             }
         }
 
-        public List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface)> PluginList => pluginsList;
+        public List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface, bool IsRaw)> PluginList => pluginsList;
 
 
         public void SetupCommands() {
