@@ -26,6 +26,8 @@ namespace LivePluginLoad {
         public bool OpenAtStartup { get; set; } = true;
         public bool TopBar { get; set; } = true;
 
+        public bool DisablePanic { get; set; } = false;
+
         public bool ForceDalamudDev { get; set; } = true;
 
         public LivePluginLoadConfig() { }
@@ -59,6 +61,13 @@ namespace LivePluginLoad {
             var forceDev = ForceDalamudDev;
             if (ImGui.Checkbox("Enable Dalamud Dev Menu", ref forceDev)) {
                 ForceDalamudDev = forceDev;
+                Save();
+            }
+
+            var disablePanic = DisablePanic;
+            if (ImGui.Checkbox("Disable Lumina Panic", ref disablePanic)) {
+                DisablePanic = disablePanic;
+                plugin.UpdatePanic();
                 Save();
             }
 
