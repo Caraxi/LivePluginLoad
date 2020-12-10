@@ -254,7 +254,7 @@ namespace LivePluginLoad {
                         Name = plugin.Name,
                         InternalName = Path.GetFileNameWithoutExtension(dllFile.Name),
                         AssemblyVersion = plugin.GetType().Assembly.GetName().Version.ToString(),
-                        Description = "Loaded by DalamudControl",
+                        Description = $"Loaded by {Name}",
                         ApplicableVersion = "any",
                         IsHide = false
                     };
