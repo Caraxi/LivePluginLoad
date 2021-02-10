@@ -20,7 +20,7 @@ jobs:
         uses: NuGet/setup-nuget@v1.0.5
         
       - name: Restore NuGet Packages
-        run: nuget restore SimpleTweaksPlugin.sln
+        run: nuget restore LivePluginLoad.sln
 
       - name: Download Dalamud
         run: |
@@ -28,7 +28,7 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
 
       - name: Build
-        run: msbuild LivePluginLoader.sln /p:Configuration=Release
+        run: msbuild LivePluginLoad.sln /p:Configuration=Release
 
       - name: Extract Publish
         run: |
