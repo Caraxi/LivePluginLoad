@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 using ImGuiNET;
-using JetBrains.Annotations;
 
 namespace LivePluginLoad {
     public class LivePluginLoad : IDalamudPlugin {
@@ -133,7 +132,10 @@ namespace LivePluginLoad {
 
             if (PluginConfig.ForceDalamudDev)
             {
-                dalamud?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamud, true);
+                var dalamudInterface = dalamud?.GetType()
+                    ?.GetProperty("DalamudUi", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?.GetValue(dalamud);
+                dalamudInterface?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamudInterface, true);
             }
 
             if (PluginConfig.DisablePanic) {
@@ -327,39 +329,52 @@ namespace LivePluginLoad {
 
         private void BuildUI() {
             drawConfigWindow = drawConfigWindow && PluginConfig.DrawConfigUI();
-            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformReload)) {
-                plc.PerformReload = false;
-                plc.PerformLoad = true;
-                plc.PerformUnload = false;
-                UnloadPlugin(plc.PluginInternalName, plc);
-                return;
-            }
-
-            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformUnload)) {
-                plc.PerformLoad = false;
-                plc.PerformUnload = false;
-                plc.PerformReload = false;
-                UnloadPlugin(plc.PluginInternalName, plc);
-                return;
-            }
-
-            foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformLoad)) {
-                plc.PerformLoad = false;
-                plc.PerformUnload = false;
-                plc.PerformReload = false;
-                LoadPlugin(plc.FilePath, plc);
-                return;
-            }
 
             if (PluginConfig.TopBar) {
                 ImGui.BeginMainMenuBar();
                 if (ImGui.MenuItem("LivePluginLoader")) {
                     OnConfigCommandHandler();
                 }
-
+                
                 ImGui.EndMainMenuBar();
             }
+            
+            try {
+                foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformReload)) {
+                    plc.PerformReload = false;
+                    plc.PerformLoad = true;
+                    plc.PerformUnload = false;
+                    UnloadPlugin(plc.PluginInternalName, plc);
+                    return;
+                }
+            } catch (Exception ex) {
+                PluginLog.LogError(ex, "Error in Reload Loop");
+            }
 
+            try {
+                foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformUnload)) {
+                    plc.PerformLoad = false;
+                    plc.PerformUnload = false;
+                    plc.PerformReload = false;
+                    UnloadPlugin(plc.PluginInternalName, plc);
+                    return;
+                }
+            } catch (Exception ex) {
+                PluginLog.LogError(ex, "Error in Unload Loop");
+            }
+
+            try {
+                foreach (var plc in PluginConfig.PluginLoadConfigs.Where(plc => plc.PerformLoad)) {
+                    plc.PerformLoad = false;
+                    plc.PerformUnload = false;
+                    plc.PerformReload = false;
+                    LoadPlugin(plc.FilePath, plc);
+                    return;
+                }
+            } catch (Exception ex) {
+                PluginLog.LogError(ex, "Error in Load Loop");
+            }
+            
             foreach (var ex in errorMessages.Where(e => !e.Closed)) {
                 var open = !ex.Closed;
                 ImGui.Begin($"{ex.Plugin.Name} failed to load.", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);

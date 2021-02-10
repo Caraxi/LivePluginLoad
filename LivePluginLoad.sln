@@ -3,14 +3,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LivePluginLoad", "LivePluginLoad\LivePluginLoad.csproj", "{3E236AA2-5206-4C17-BE5A-715940ACBA7B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LivePluginLoad", "LivePluginLoad.csproj", "{3E236AA2-5206-4C17-BE5A-715940ACBA7B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
-		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{3E236AA2-5206-4C17-BE5A-715940ACBA7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -23,7 +21,7 @@ Global
 		{3E236AA2-5206-4C17-BE5A-715940ACBA7B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
+		HideSolutionNode = TRUE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {831936CF-817B-4D26-B0C5-B9DCC540474C}

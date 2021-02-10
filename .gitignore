@@ -1,1 +1,6 @@
 .vs/
+.idea/
+bin/
+obj/
+Publish/
+Publish

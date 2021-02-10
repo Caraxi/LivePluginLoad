@@ -3,7 +3,6 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -52,18 +51,21 @@ namespace LivePluginLoad {
                 Save();
             }
             
+            ImGui.SameLine();
             var topBar = TopBar;
             if (ImGui.Checkbox("Show Window Header Button", ref topBar)) {
                 TopBar = topBar;
                 Save();
             }
 
+            ImGui.SameLine();
             var forceDev = ForceDalamudDev;
             if (ImGui.Checkbox("Enable Dalamud Dev Menu", ref forceDev)) {
                 ForceDalamudDev = forceDev;
                 Save();
             }
-
+            
+            ImGui.SameLine();
             var disablePanic = DisablePanic;
             if (ImGui.Checkbox("Disable Lumina Panic", ref disablePanic)) {
                 DisablePanic = disablePanic;
@@ -94,6 +96,7 @@ namespace LivePluginLoad {
             ImGui.Text("Remove/Config");
             ImGui.NextColumn();
             ImGui.Separator();
+            
             int index = 0;
 
             var spacing = ImGui.GetStyle().ItemSpacing;
