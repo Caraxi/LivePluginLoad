@@ -29,6 +29,7 @@ namespace LivePluginLoad {
         public bool DisablePanic { get; set; } = false;
 
         public bool ForceDalamudDev { get; set; } = true;
+        public bool ForceDalamudLog { get; set; } = false;
 
         public LivePluginLoadConfig() { }
 
@@ -63,6 +64,13 @@ namespace LivePluginLoad {
             var forceDev = ForceDalamudDev;
             if (ImGui.Checkbox("Enable Dalamud Dev Menu", ref forceDev)) {
                 ForceDalamudDev = forceDev;
+                Save();
+            }
+            
+            ImGui.SameLine();
+            var forceLog = ForceDalamudLog;
+            if (ImGui.Checkbox("Enable Dalamud Log Window", ref forceLog)) {
+                ForceDalamudLog = forceLog;
                 Save();
             }
             
