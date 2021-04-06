@@ -148,19 +148,12 @@ namespace LivePluginLoad {
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             pluginInterface.UiBuilder.OnOpenConfigUi += OnConfigCommandHandler; 
 
-            var dalamudInterface = dalamud?.GetType()
-                ?.GetProperty("DalamudUi", BindingFlags.Instance | BindingFlags.NonPublic)
-                ?.GetValue(dalamud);
-            
             if (PluginConfig.ForceDalamudDev)
             {
-                dalamudInterface?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamudInterface, true);
-            }
-            
-            if (PluginConfig.ForceDalamudLog)
-            {
-                var openLog = dalamudInterface?.GetType()?.GetMethod("OpenLog", BindingFlags.Instance | BindingFlags.Public);
-                openLog?.Invoke(dalamudInterface, null);
+                var dalamudInterface = dalamud?.GetType()
+                    ?.GetProperty("DalamudUi", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?.GetValue(dalamud);
+                dalamudInterface?.GetType().GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamudInterface, true);
             }
 
             if (PluginConfig.DisablePanic) {
