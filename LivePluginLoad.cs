@@ -30,9 +30,13 @@ namespace LivePluginLoad {
 
         private readonly List<PluginLoadError> errorMessages = new List<PluginLoadError>();
 
+        private bool isResolverTakenOver;
+        private ResolveEventHandler originalAssemblyResolver;
+        
         public void TakeoverAssemblyResolve() {
+            if (isResolverTakenOver) return;
             PluginLog.Log("Attempting to takeover AppDomain.AssemblyResolve");
-
+            isResolverTakenOver = true;
             try {
                 var cd = AppDomain.CurrentDomain;
 
@@ -40,6 +44,7 @@ namespace LivePluginLoad {
                 var a = typeof(AppDomain);
                 var b = a.GetField("_AssemblyResolve", BindingFlags.Instance | BindingFlags.NonPublic);
                 var c = (ResolveEventHandler) b?.GetValue(cd);
+                originalAssemblyResolver = c;
                 
                 b?.SetValue(cd, new ResolveEventHandler(((sender, args) => {
 
@@ -85,6 +90,21 @@ namespace LivePluginLoad {
             }
         }
 
+        private void ReleaseAssemblyResolve() {
+            if (!isResolverTakenOver) return;
+            PluginLog.Log("Attempting to release AppDomain.AssemblyResolve");
+            isResolverTakenOver = false;
+            try {
+                var cd = AppDomain.CurrentDomain;
+                var a = typeof(AppDomain);
+                var b = a.GetField("_AssemblyResolve", BindingFlags.Instance | BindingFlags.NonPublic);
+                b?.SetValue(cd, originalAssemblyResolver);
+            } catch (Exception ex) {
+                PluginLog.Log("Failed to release AppDomain.AssemblyResolve");
+                PluginLog.LogError(ex.ToString());
+            }
+        }
+
         public void Dispose() {
             taskController.Cancel();
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
@@ -124,8 +144,6 @@ namespace LivePluginLoad {
                 PluginLog.LogError("Failed to setup.");
                 return;
             }
-            
-            TakeoverAssemblyResolve();
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             pluginInterface.UiBuilder.OnOpenConfigUi += OnConfigCommandHandler; 
@@ -225,7 +243,7 @@ namespace LivePluginLoad {
 
             var assemblyData = File.ReadAllBytes(dllFile.FullName);
 
-
+            TakeoverAssemblyResolve();
             if (File.Exists(pdbPath)) {
                 var pdbData = File.ReadAllBytes(pdbPath);
                 pluginAssembly = Assembly.Load(assemblyData, pdbData);
@@ -246,6 +264,7 @@ namespace LivePluginLoad {
 
                     if (pluginsList.Any(x => x.Plugin.GetType().Assembly.GetName().Name == type.Assembly.GetName().Name)) {
                         PluginLog.LogError("Duplicate plugin found: {0}", dllFile.FullName);
+                        ReleaseAssemblyResolve();
                         return;
                     }
 
@@ -286,6 +305,8 @@ namespace LivePluginLoad {
                     }
                 }
             }
+            
+            ReleaseAssemblyResolve();
         }
 
         public class PluginLoadError {
