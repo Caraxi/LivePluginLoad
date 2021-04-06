@@ -10,6 +10,6 @@
   "InternalName": "LivePluginLoad",
   "AssemblyVersion": "VERSION",
   "RepoUrl": "https://github.com/Caraxi/LivePluginLoad",
-  "DalamudApiLevel": 2,
+  "DalamudApiLevel": 3,
   "ApplicableVersion": "any"
 }

@@ -30,9 +30,13 @@ namespace LivePluginLoad {
 
         private readonly List<PluginLoadError> errorMessages = new List<PluginLoadError>();
 
+        private bool isResolverTakenOver;
+        private ResolveEventHandler originalAssemblyResolver;
+        
         public void TakeoverAssemblyResolve() {
+            if (isResolverTakenOver) return;
             PluginLog.Log("Attempting to takeover AppDomain.AssemblyResolve");
-
+            isResolverTakenOver = true;
             try {
                 var cd = AppDomain.CurrentDomain;
 
@@ -40,6 +44,7 @@ namespace LivePluginLoad {
                 var a = typeof(AppDomain);
                 var b = a.GetField("_AssemblyResolve", BindingFlags.Instance | BindingFlags.NonPublic);
                 var c = (ResolveEventHandler) b?.GetValue(cd);
+                originalAssemblyResolver = c;
                 
                 b?.SetValue(cd, new ResolveEventHandler(((sender, args) => {
 
@@ -85,6 +90,21 @@ namespace LivePluginLoad {
             }
         }
 
+        private void ReleaseAssemblyResolve() {
+            if (!isResolverTakenOver) return;
+            PluginLog.Log("Attempting to release AppDomain.AssemblyResolve");
+            isResolverTakenOver = false;
+            try {
+                var cd = AppDomain.CurrentDomain;
+                var a = typeof(AppDomain);
+                var b = a.GetField("_AssemblyResolve", BindingFlags.Instance | BindingFlags.NonPublic);
+                b?.SetValue(cd, originalAssemblyResolver);
+            } catch (Exception ex) {
+                PluginLog.Log("Failed to release AppDomain.AssemblyResolve");
+                PluginLog.LogError(ex.ToString());
+            }
+        }
+
         public void Dispose() {
             taskController.Cancel();
             PluginInterface.UiBuilder.OnBuildUi -= this.BuildUI;
@@ -115,7 +135,7 @@ namespace LivePluginLoad {
                 ?.GetValue(pluginManager);
 
             pluginsList = (List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface, bool IsRaw)>) pluginManager?.GetType()
-                ?.GetField("Plugins", BindingFlags.Instance | BindingFlags.Public)
+                ?.GetProperty("Plugins", BindingFlags.Instance | BindingFlags.Public)
                 ?.GetValue(pluginManager);
 
             pluginInterfaceConstructor = typeof(DalamudPluginInterface).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {typeof(Dalamud.Dalamud), typeof(string), typeof(PluginConfigurations), typeof(PluginLoadReason)}, null);
@@ -124,8 +144,6 @@ namespace LivePluginLoad {
                 PluginLog.LogError("Failed to setup.");
                 return;
             }
-            
-            TakeoverAssemblyResolve();
 
             PluginInterface.UiBuilder.OnBuildUi += this.BuildUI;
             pluginInterface.UiBuilder.OnOpenConfigUi += OnConfigCommandHandler; 
@@ -146,7 +164,7 @@ namespace LivePluginLoad {
             }
 
             if (PluginConfig.DisablePanic) {
-                var gameData = (Lumina.Lumina) pluginInterface.Data?.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(pluginInterface.Data);
+                var gameData = (Lumina.GameData) pluginInterface.Data?.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(pluginInterface.Data);
                 if (gameData == null) {
                     PluginLog.Log("Failed to disable panic!");
                 } else {
@@ -232,7 +250,7 @@ namespace LivePluginLoad {
 
             var assemblyData = File.ReadAllBytes(dllFile.FullName);
 
-
+            TakeoverAssemblyResolve();
             if (File.Exists(pdbPath)) {
                 var pdbData = File.ReadAllBytes(pdbPath);
                 pluginAssembly = Assembly.Load(assemblyData, pdbData);
@@ -253,6 +271,7 @@ namespace LivePluginLoad {
 
                     if (pluginsList.Any(x => x.Plugin.GetType().Assembly.GetName().Name == type.Assembly.GetName().Name)) {
                         PluginLog.LogError("Duplicate plugin found: {0}", dllFile.FullName);
+                        ReleaseAssemblyResolve();
                         return;
                     }
 
@@ -293,6 +312,8 @@ namespace LivePluginLoad {
                     }
                 }
             }
+            
+            ReleaseAssemblyResolve();
         }
 
         public class PluginLoadError {
@@ -396,7 +417,7 @@ namespace LivePluginLoad {
         }
 
         public void UpdatePanic() {
-            var gameData = (Lumina.Lumina) PluginInterface.Data.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(PluginInterface.Data);
+            var gameData = (Lumina.GameData) PluginInterface.Data.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(PluginInterface.Data);
             if (gameData != null) {
                 gameData.Options.PanicOnSheetChecksumMismatch = !PluginConfig.DisablePanic;
                 PluginLog.Log($"Set Panic: {!PluginConfig.DisablePanic}");

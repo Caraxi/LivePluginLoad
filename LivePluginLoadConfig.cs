@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -171,9 +172,13 @@ namespace LivePluginLoad {
 
                     var loadedPlugin = plugin.PluginList.Where(p => p.Definition.InternalName == plc.PluginInternalName).Select(p => p.PluginInterface).FirstOrDefault();
 
-                    if (loadedPlugin?.UiBuilder.OnOpenConfigUi != null) {
-                        if (ImGui.Button($"Open Config###pluginConfig_PLC_OpenConfig_{index}", bSizeRemove)) {
-                            loadedPlugin?.UiBuilder.OnOpenConfigUi?.Invoke(null, null);
+                    var getHasConfigUi = loadedPlugin.UiBuilder.GetType().GetProperty("HasConfigUi", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var openConfigUi   = loadedPlugin.UiBuilder.GetType().GetMethod("OpenConfigUi", BindingFlags.Instance  | BindingFlags.NonPublic);
+
+                    if ((bool) getHasConfigUi.GetValue(loadedPlugin.UiBuilder)) {
+                        if (ImGui.Button($"Open Config###pluginConfig_PLC_OpenConfig_{index}", bSizeRemove))
+                        {
+                            openConfigUi.Invoke(loadedPlugin.UiBuilder, null);
                         }
                     } else {
                         ImGui.Text("Unload to Remove");
