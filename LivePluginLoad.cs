@@ -135,7 +135,7 @@ namespace LivePluginLoad {
                 ?.GetValue(pluginManager);
 
             pluginsList = (List<(IDalamudPlugin Plugin, PluginDefinition Definition, DalamudPluginInterface PluginInterface, bool IsRaw)>) pluginManager?.GetType()
-                ?.GetField("Plugins", BindingFlags.Instance | BindingFlags.Public)
+                ?.GetProperty("Plugins", BindingFlags.Instance | BindingFlags.Public)
                 ?.GetValue(pluginManager);
 
             pluginInterfaceConstructor = typeof(DalamudPluginInterface).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {typeof(Dalamud.Dalamud), typeof(string), typeof(PluginConfigurations), typeof(PluginLoadReason)}, null);
@@ -153,11 +153,11 @@ namespace LivePluginLoad {
                 var dalamudInterface = dalamud?.GetType()
                     ?.GetProperty("DalamudUi", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?.GetValue(dalamud);
-                dalamudInterface?.GetType()?.GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamudInterface, true);
+                dalamudInterface?.GetType().GetField("isImguiDrawDevMenu", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(dalamudInterface, true);
             }
 
             if (PluginConfig.DisablePanic) {
-                var gameData = (Lumina.Lumina) pluginInterface.Data?.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(pluginInterface.Data);
+                var gameData = (Lumina.GameData) pluginInterface.Data?.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(pluginInterface.Data);
                 if (gameData == null) {
                     PluginLog.Log("Failed to disable panic!");
                 } else {
@@ -410,7 +410,7 @@ namespace LivePluginLoad {
         }
 
         public void UpdatePanic() {
-            var gameData = (Lumina.Lumina) PluginInterface.Data.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(PluginInterface.Data);
+            var gameData = (Lumina.GameData) PluginInterface.Data.GetType()?.GetField("gameData", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(PluginInterface.Data);
             if (gameData != null) {
                 gameData.Options.PanicOnSheetChecksumMismatch = !PluginConfig.DisablePanic;
                 PluginLog.Log($"Set Panic: {!PluginConfig.DisablePanic}");
