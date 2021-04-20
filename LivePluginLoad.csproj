@@ -10,7 +10,7 @@
         <OutputPath></OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <DebugSymbols>true</DebugSymbols>
-        <DebugType>Portable</DebugType>
+        <DebugType>Full</DebugType>
         <DocumentationFile></DocumentationFile>
     </PropertyGroup>
     <PropertyGroup Label="Feature">
