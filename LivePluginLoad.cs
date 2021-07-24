@@ -377,8 +377,8 @@ namespace LivePluginLoad {
                 return;
             }
             
-            foreach (var plc in pl.Where(plc => plc.Loaded)) {
-                plc.PerformUnload = true;
+            foreach (var plc in pl.Where(plc => plc.Loaded == false)) {
+                plc.PerformLoad = true;
             }
         }
 
