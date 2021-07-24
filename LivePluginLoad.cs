@@ -111,6 +111,7 @@ namespace LivePluginLoad {
             PluginInterface.UiBuilder.OnOpenConfigUi -= OnConfigCommandHandler;
             PluginInterface.CommandManager.RemoveHandler("/plpl");
             PluginInterface.CommandManager.RemoveHandler("/plpl_load");
+            PluginInterface.CommandManager.RemoveHandler("/plpl_unload");
             while (reloadLoop != null && !reloadLoop.IsCompleted) Thread.Sleep(1);
             reloadLoop?.Dispose();
             PluginInterface?.Dispose();
@@ -335,12 +336,49 @@ namespace LivePluginLoad {
                 HelpMessage = $"Load a plugin from a given path",
                 ShowInHelp = true
             });
+            
+            PluginInterface.CommandManager.AddHandler("/plpl_unload", new Dalamud.Game.Command.CommandInfo(OnUnloadCommandHandler) {
+                HelpMessage = $"Unload a plugin from a given path",
+                ShowInHelp = true
+            });
+        }
+        
+        private void OnUnloadCommandHandler(string command, string arguments) {
+            var pl = PluginConfig.PluginLoadConfigs.Where(t => t.FilePath.Contains(arguments)).ToList();
+            
+            if (pl.Count == 0) {
+                PluginInterface.Framework.Gui.Chat.Print($"No plugins matched the filter.");
+                return;
+            }
+            
+            if (pl.Count > 1) {
+                PluginInterface.Framework.Gui.Chat.Print($"Multiple plugins matched the filter. Please be more specific.");
+                return;
+            }
+            
+            foreach (var plc in pl.Where(plc => plc.Loaded)) {
+                plc.PerformUnload = true;
+            }
         }
 
         private void OnLoadCommandHandler(string command = "", string arguments = "") {
-            PluginInterface.Framework.Gui.Chat.Print($"Loading Plugin: {arguments}");
-            if (!string.IsNullOrEmpty(arguments)) {
-                LoadPlugin(arguments);
+            var pl = PluginConfig.PluginLoadConfigs.Where(t => t.FilePath.Contains(arguments)).ToList();
+            
+            if (pl.Count == 0) {
+                PluginInterface.Framework.Gui.Chat.Print($"Loading Plugin: {arguments}");
+                if (!string.IsNullOrEmpty(arguments)) {
+                    LoadPlugin(arguments);
+                }
+                return;
+            }
+            
+            if (pl.Count > 1) {
+                PluginInterface.Framework.Gui.Chat.Print($"Multiple plugins matched the filter. Please be more specific.");
+                return;
+            }
+            
+            foreach (var plc in pl.Where(plc => plc.Loaded)) {
+                plc.PerformUnload = true;
             }
         }
 
